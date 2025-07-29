@@ -1,22 +1,22 @@
-name: Auto Clone ImmortalWRT and Push
+name: Unzip ImmortalWRT ZIP and Push
 
 on:
   push:
     branches:
-      - main  # 🔁 Change this if your default branch is not 'main'
+      - main  # 🔁 Change to your default branch if needed
 
 jobs:
-  clone-and-push:
+  unzip-copy-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout this repo
+    - name: Checkout this repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        persist-credentials: false  # We'll set up GITHUB_TOKEN manually
+        persist-credentials: false
 
-    - name: Set up Git user
+    - name: Set Git user
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -26,19 +26,18 @@ jobs:
       run: |
         echo "branch_name=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_OUTPUT"
 
-    - name: Clone ImmortalWRT v24.10.0
+    - name: Unzip and copy files
       run: |
-        git clone --depth=1 --branch v24.10.0 https://github.com/immortalwrt/immortalwrt.git temp
-        # Overwrite files except .git and .github
-        rsync -a --delete --exclude=".git" --exclude=".github" temp/ . || [[ $? == 24 ]]
-        rm -rf temp
+        unzip immortalwrt-24.10.0.zip
+        cp -rf immortalwrt-24.10.0/. ./
+        rm -rf immortalwrt-24.10.0
 
-    - name: Commit and Push
+    - name: Commit and push
       env:
         TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: ${{ steps.get_branch.outputs.branch_name }}
       run: |
         git add .
-        git commit -m "Auto-sync with ImmortalWRT v24.10.0" || echo "Nothing to commit"
+        git commit -m "Copied content from immortalwrt-24.10.0.zip" || echo "Nothing to commit"
         git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
         git push origin "$BRANCH"
