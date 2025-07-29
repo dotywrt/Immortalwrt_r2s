@@ -1,0 +1,36 @@
+name: Clone ImmortalWRT and Push
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clone-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Git user
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Remove all existing files
+      run: |
+        git rm -r --cached . || true
+        rm -rf * .[^.]* || true
+
+    - name: Clone ImmortalWRT v24.10.0
+      run: |
+        git clone --depth=1 --branch v24.10.0 https://github.com/immortalwrt/immortalwrt.git temp
+        cp -r temp/* temp/.[!.]* .
+        rm -rf temp
+
+    - name: Commit and push changes
+      run: |
+        git add .
+        git commit -m "Replace content with immortalwrt v24.10.0" || echo "Nothing to commit"
+        git push origin HEAD
