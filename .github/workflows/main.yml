@@ -12,25 +12,32 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        persist-credentials: false  # we'll use GITHUB_TOKEN manually
 
     - name: Set up Git user
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Remove all existing files
+    - name: Get default branch
+      id: get_branch
       run: |
-        git rm -r --cached . || true
-        rm -rf * .[^.]* || true
+        echo "branch_name=$(git symbolic-ref --short HEAD)" >> "$GITHUB_OUTPUT"
 
     - name: Clone ImmortalWRT v24.10.0
       run: |
         git clone --depth=1 --branch v24.10.0 https://github.com/immortalwrt/immortalwrt.git temp
-        cp -r temp/* temp/.[!.]* .
+        rm -rf * .[^.]* || true
+        cp -r temp/* temp/.[!.]* . || true
         rm -rf temp
 
-    - name: Commit and push changes
+    - name: Commit and Push
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: ${{ steps.get_branch.outputs.branch_name }}
       run: |
+        git checkout -B "$BRANCH"
         git add .
-        git commit -m "Replace content with immortalwrt v24.10.0" || echo "Nothing to commit"
-        git push origin HEAD
+        git commit -m "Replace with ImmortalWRT v24.10.0" || echo "Nothing to commit"
+        git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+        git push origin "$BRANCH"
